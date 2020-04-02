@@ -10,17 +10,19 @@ namespace tut3.Models
     {
         public Student() {}
 
-        public Student(int id, string firstName, string lastName, string indexNumber)
+        public Student(string firstName, string lastName, string birthDate, string studies, string semester)
         {
-            Id = id;
             FirstName = firstName;
             LastName = lastName;
-            IndexNumber = indexNumber;
+            BirthDate = birthDate;
+            Studies = studies;
+            Semester = semester;
         }
 
-        public int Id { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public string IndexNumber { get; set; }
+        public string BirthDate { get; set; }
+        public string Studies { get; set; }
+        public string Semester { get; set; }
     }
 }
