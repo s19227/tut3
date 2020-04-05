@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 using tut3.DAL;
+using tut3.Services;
 
 namespace tut3
 {
@@ -27,6 +28,7 @@ namespace tut3
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddSingleton<IStudentDbService, StudentDbService>();
             services.AddControllers();
         }
 
