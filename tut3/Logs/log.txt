@@ -1,0 +1,32 @@
+Method: GET
+Endpoint: /api/students
+Body: 
+Query strings: None
+------------------------------------------
+
+Method: GET
+Endpoint: /favicon.ico
+Body: 
+Query strings: None
+------------------------------------------
+
+Method: POST
+Endpoint: /api/students
+Body: {
+	"Semester": "13",
+	"Name": "Computer Science"
+}
+
+Query strings: None
+------------------------------------------
+
+Method: POST
+Endpoint: /api/students
+Body: {
+	"Semester": "13",
+	"Name": "Computer Science"
+}
+
+Query strings: ?name=%22hello%22
+------------------------------------------
+
