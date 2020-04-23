@@ -1,8 +1,11 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
+using tut3.Encription;
 using tut3.Models;
 using tut3.Services;
 
@@ -151,7 +154,7 @@ namespace tut3.DAL
                     command.CommandType = System.Data.CommandType.StoredProcedure;
 
                     command.Parameters.Clear();
-                    
+
                     command.Parameters.AddWithValue("@StudyName", data.Name);
                     command.Parameters.AddWithValue("@Semester", data.Semester);
                     command.ExecuteNonQuery();
@@ -162,7 +165,7 @@ namespace tut3.DAL
                     command.CommandText = "SELECT Semester, StartDate, s.Name as Name FROM Enrollment e " +
                                           "JOIN Studies s ON s.IdStudy = e.IdStudy " +
                                           "WHERE e.Semester = @Semester AND s.Name = @Name";
-                    
+
                     Console.WriteLine((Convert.ToInt32(data.Semester) + 1).ToString());
 
                     command.Parameters.AddWithValue("@Semester", (Convert.ToInt32(data.Semester) + 1).ToString());
@@ -252,6 +255,132 @@ namespace tut3.DAL
             }
 
             return students;
+        }
+
+        public LoginCheckResult CheckLogin(LoginRequest loginRequest)
+        {
+            using (var connection = new SqlConnection(CONNECTION_STRING))
+            {
+                using (var command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    connection.Open();
+
+                    /* Check if given index number exists */
+                    command.CommandText = "SELECT IndexNumber FROM Student WHERE IndexNumber = @IndexNumber";
+                    command.Parameters.AddWithValue("@IndexNumber", loginRequest.Login);
+
+                    var reader = command.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        reader.Close();
+                        return null;
+                    }
+                    reader.Close();
+
+                    /* Get salt */
+                    command.CommandText = "SELECT salt FROM Student WHERE IndexNumber = @IndexNumber";
+                    reader = command.ExecuteReader();
+                    reader.Read();
+                    string salt = reader["salt"].ToString();
+                    reader.Close();
+
+                    /* Get password */
+                    command.CommandText = "SELECT s.pass " +
+                                          "FROM Student s " +
+                                          "WHERE IndexNumber = @IndexNumber; ";
+                    reader = command.ExecuteReader();
+                    reader.Read();
+                    string password = reader["pass"].ToString();
+                    reader.Close();
+
+                    /* Validate password */
+                    if (!Salt.Validate(loginRequest.Password, salt, password))
+                    {
+                        return null;
+                    }
+
+                    /* Get the roles of the logged in user */
+                    var roles = new List<string>();
+                    command.CommandText = "SELECT r.roleName " +
+                                          "FROM Student s " +
+                                          "JOIN Role_Student sr ON s.IndexNumber = sr.studentId " +
+                                          "JOIN Role r ON sr.roleId = r.idRole " +
+                                          "WHERE IndexNumber = @IndexNumber AND pass = @pass;";
+                    reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        roles.Add(reader["roleName"].ToString());
+                    }
+                    reader.Close();
+
+                    /* Create refresh token */
+                    string refreshToken = Guid.NewGuid().ToString();
+                    command.CommandText = "UPDATE Student " +
+                                          "Set refresh = @refresh " +
+                                          "WHERE IndexNumber = @IndexNumber;";
+                    command.Parameters.AddWithValue("@refresh", refreshToken);
+                    reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        refreshToken = reader["refresh"].ToString();
+                    }
+                    reader.Close();
+
+                    return new LoginCheckResult(roles, refreshToken);
+                }
+            }
+        }
+
+        public string CheckRefreshToken(RefreshTokenRequest tokenRequest)
+        {
+            using (var connection = new SqlConnection(CONNECTION_STRING))
+            {
+                using (var command = new SqlCommand())
+                {
+                    command.Connection = connection;
+                    connection.Open();
+
+                    /* Check if given index number exists */
+                    command.CommandText = "SELECT IndexNumber FROM Student WHERE IndexNumber = @IndexNumber";
+                    command.Parameters.AddWithValue("@IndexNumber", tokenRequest.Login);
+
+                    var reader = command.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        reader.Close();
+                        return null;
+                    }
+                    reader.Close();
+
+                    /* Check token */
+                    command.CommandText = "SELECT IndexNumber FROM Student WHERE IndexNumber = @IndexNumber AND refresh = @refresh";
+                    command.Parameters.AddWithValue("@refresh", tokenRequest.RefreshToken);
+
+                    reader = command.ExecuteReader();
+                    if (!reader.Read())
+                    {
+                        reader.Close();
+                        return null;
+                    }
+                    reader.Close();
+
+                    /* Create new token */
+                    string refreshToken = Guid.NewGuid().ToString();
+                    command.CommandText = "UPDATE Student " +
+                                          "Set refresh = @newrefresh " +
+                                          "WHERE IndexNumber = @IndexNumber;";
+                    command.Parameters.AddWithValue("@newrefresh", refreshToken);
+                    reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        refreshToken = reader["refresh"].ToString();
+                    }
+                    reader.Close();
+
+                    return refreshToken;
+                }
+            }
         }
     }
 }

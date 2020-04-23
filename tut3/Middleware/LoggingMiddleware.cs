@@ -23,10 +23,13 @@ namespace tut3.Middleware
             string method = httpContext.Request.Method;
             string endpoint = httpContext.Request.Path;
 
+            httpContext.Request.EnableBuffering();
+
             string body;
             using (var reader = new StreamReader(httpContext.Request.Body))
             {
                 body = await reader.ReadToEndAsync();
+                httpContext.Request.Body.Position = 0;
             }
 
             string queryString = httpContext.Request.QueryString.ToString();

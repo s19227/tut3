@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using tut3.Models;
 using tut3.Services;
@@ -10,6 +11,7 @@ namespace tut3.Controllers
 {
     [ApiController]
     [Route("api/enrollments")]
+    [Authorize(Roles = "employee")]
     public class EnrollmentController : ControllerBase
     {
         public EnrollmentController(IStudentDbService studentsDbService)

@@ -13,5 +13,7 @@ namespace tut3.Services
 
         EnrollmentData Enroll(Student student);
         Enrollment Promote(PromotionData data);
+        LoginCheckResult CheckLogin(LoginRequest loginRequest);
+        string CheckRefreshToken(RefreshTokenRequest tokenRequest);
     }
 }
