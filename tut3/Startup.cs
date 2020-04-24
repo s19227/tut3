@@ -61,6 +61,8 @@ namespace tut3
 
             app.UseHttpsRedirection();
 
+            /* This part is commented so it it easier to test the solution */
+
             /*app.Use(async (context, next) =>
             {
                 if (

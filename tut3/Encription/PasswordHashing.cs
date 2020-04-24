@@ -4,7 +4,7 @@ using System.Text;
 
 namespace tut3.Encription
 {
-    public static class Salt
+    public static class PasswordHashing
     {
         public static bool Validate(string password, string salt, string hash) => Encript(password, salt).Equals(hash);
 

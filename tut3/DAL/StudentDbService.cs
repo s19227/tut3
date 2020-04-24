@@ -295,7 +295,7 @@ namespace tut3.DAL
                     reader.Close();
 
                     /* Validate password */
-                    if (!Salt.Validate(loginRequest.Password, salt, password))
+                    if (!PasswordHashing.Validate(loginRequest.Password, salt, password))
                     {
                         return null;
                     }
@@ -307,6 +307,8 @@ namespace tut3.DAL
                                           "JOIN Role_Student sr ON s.IndexNumber = sr.studentId " +
                                           "JOIN Role r ON sr.roleId = r.idRole " +
                                           "WHERE IndexNumber = @IndexNumber AND pass = @pass;";
+                    command.Parameters.AddWithValue("@pass", loginRequest.Password);
+
                     reader = command.ExecuteReader();
                     while (reader.Read())
                     {
@@ -315,19 +317,25 @@ namespace tut3.DAL
                     reader.Close();
 
                     /* Create refresh token */
-                    string refreshToken = Guid.NewGuid().ToString();
-                    command.CommandText = "UPDATE Student " +
-                                          "Set refresh = @refresh " +
-                                          "WHERE IndexNumber = @IndexNumber;";
-                    command.Parameters.AddWithValue("@refresh", refreshToken);
-                    reader = command.ExecuteReader();
-                    while (reader.Read())
+                    var transaction = connection.BeginTransaction();
+                    command.Transaction = transaction;
+                    try
                     {
-                        refreshToken = reader["refresh"].ToString();
+                        string refreshToken = Guid.NewGuid().ToString();
+                        command.CommandText = "UPDATE Student " +
+                                              "Set refresh = @refresh " +
+                                              "WHERE IndexNumber = @IndexNumber;";
+                        command.Parameters.AddWithValue("@refresh", refreshToken);
+                        reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            refreshToken = reader["refresh"].ToString();
+                        }
+                        reader.Close();
+                        transaction.Commit();
+                        return new LoginCheckResult(roles, refreshToken);
                     }
-                    reader.Close();
-
-                    return new LoginCheckResult(roles, refreshToken);
+                    catch (Exception e) { transaction.Rollback(); throw e; }
                 }
             }
         }
@@ -366,19 +374,26 @@ namespace tut3.DAL
                     reader.Close();
 
                     /* Create new token */
-                    string refreshToken = Guid.NewGuid().ToString();
-                    command.CommandText = "UPDATE Student " +
-                                          "Set refresh = @newrefresh " +
-                                          "WHERE IndexNumber = @IndexNumber;";
-                    command.Parameters.AddWithValue("@newrefresh", refreshToken);
-                    reader = command.ExecuteReader();
-                    while (reader.Read())
+                    var transaction = connection.BeginTransaction();
+                    command.Transaction = transaction;
+                    try
                     {
-                        refreshToken = reader["refresh"].ToString();
-                    }
-                    reader.Close();
+                        string refreshToken = Guid.NewGuid().ToString();
+                        command.CommandText = "UPDATE Student " +
+                                              "Set refresh = @newrefresh " +
+                                              "WHERE IndexNumber = @IndexNumber;";
+                        command.Parameters.AddWithValue("@newrefresh", refreshToken);
+                        reader = command.ExecuteReader();
+                        while (reader.Read())
+                        {
+                            refreshToken = reader["refresh"].ToString();
+                        }
+                        reader.Close();
 
-                    return refreshToken;
+                        transaction.Commit();
+                        return refreshToken;
+                    }
+                    catch (Exception e) { transaction.Rollback(); throw e; }
                 }
             }
         }

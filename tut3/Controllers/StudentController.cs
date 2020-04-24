@@ -53,7 +53,7 @@ namespace tut3.Controllers
 
             if (result == null) return Unauthorized();
 
-            Claim nameClaim = new Claim(ClaimTypes.Actor, loginRequest.Login);
+            Claim nameClaim = new Claim(ClaimTypes.Name, loginRequest.Login);
 
             IEnumerable<Claim> claimsList = result.Roles.Select(role => new Claim(ClaimTypes.Role, role));
             var list = claimsList.ToList();
@@ -73,7 +73,7 @@ namespace tut3.Controllers
 
             string rawIndex = oldJWT.Claims
                 .ToList()
-                .Find(e => e.Type.Equals(ClaimTypes.Actor))
+                .Find(e => e.Type.Equals(ClaimTypes.Name))
                 .ToString();
 
             var indexData = rawIndex.Split(" ");
