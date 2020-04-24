@@ -49,16 +49,20 @@ namespace tut3.Controllers
         [HttpPost][Route("login")]
         public IActionResult Login(LoginRequest loginRequest)
         {
+            /* Check login and password and get claims */
             var result = _studentsDbService.CheckLogin(loginRequest);
 
             if (result == null) return Unauthorized();
 
+            /* Set login as a claim */
             Claim nameClaim = new Claim(ClaimTypes.Name, loginRequest.Login);
 
+            /* Add login claim to the claim list */
             IEnumerable<Claim> claimsList = result.Roles.Select(role => new Claim(ClaimTypes.Role, role));
             var list = claimsList.ToList();
             list.Add(nameClaim);
 
+            /* Return new JWT and refresh token */
             return Ok(new
             {
                 token = new JwtSecurityTokenHandler().WriteToken(GenerateJWT(list.ToArray())),
@@ -71,6 +75,7 @@ namespace tut3.Controllers
         {
             JwtSecurityToken oldJWT = new JwtSecurityToken(request.oldJWT);
 
+            /* Get login of the user from the old token */
             string rawIndex = oldJWT.Claims
                 .ToList()
                 .Find(e => e.Type.Equals(ClaimTypes.Name))
@@ -81,10 +86,12 @@ namespace tut3.Controllers
 
             var rtr = new RefreshTokenRequest(request.refreshToken, index);
 
+            /* Check id the database if the correct refresh token is provided */
             var result = _studentsDbService.CheckRefreshToken(rtr);
 
             if (result == null) return Unauthorized();
 
+            /* Return new JWT and refresh token */
             return Ok(new
             {
                 token = new JwtSecurityTokenHandler().WriteToken(GenerateJWT(oldJWT.Claims.ToArray())),
